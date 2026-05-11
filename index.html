@@ -249,7 +249,7 @@
   </section>
 
   <section id="people">
-    <h2>참여자별 진행률</h2>
+    <h2>참여자별 페이스</h2>
     <div class="person-grid" id="people-grid"></div>
   </section>
 
@@ -449,8 +449,7 @@ function render(completions) {
         <div class="name"><span>${name}</span><span class="pct">${pct}%</span></div>
         <div class="bar"><div style="width:${Math.min(100,pct)}%"></div></div>
         <div class="stats">
-          <span><b>${done}</b>/${expected} 완료</span>
-          <span style="color:${missed>0?'var(--miss)':'var(--ink-soft)'}"><b>${missed}</b> 미완료</span>
+          <span>완료 <b>${done}</b>건 · 미완료 <b>${missed}</b>건</span>
         </div>
       </div>
     `;
