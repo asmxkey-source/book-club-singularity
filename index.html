@@ -282,7 +282,7 @@ const CONFIG = {
   startDate: '2026-05-11',
   totalSessions: 23,
   startPage: 11,
-  endPage: 686,
+  endPage: 699,
   pagesPerSession: 30,
   today: null,
 };
@@ -513,6 +513,12 @@ dropEl.addEventListener('drop', e => {
   r.onload = () => loadText(r.result, `로컬 파일: ${f.name}`);
   r.readAsText(f, 'UTF-8');
 });
+
+const headerSched = generateSchedule();
+const totalPages = CONFIG.endPage - CONFIG.startPage + 1;
+document.getElementById('m-range').textContent = `p.${CONFIG.startPage} ~ p.${CONFIG.endPage} (총 ${totalPages}쪽)`;
+document.getElementById('m-schedule').textContent = `${CONFIG.totalSessions}회차 · 월~금 ${CONFIG.pagesPerSession}쪽/일`;
+document.getElementById('m-period').textContent = `${CONFIG.startDate} → ${fmtDate(headerSched[headerSched.length-1].date)}`;
 
 document.getElementById('upload-section').style.display = 'block';
 
