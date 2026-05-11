@@ -142,6 +142,7 @@
   .legend .dot { width: 10px; height: 10px; border-radius: 3px; }
 
   .drop {
+    display: block;
     border: 2px dashed var(--line);
     border-radius: 12px;
     padding: 32px;
@@ -149,7 +150,9 @@
     color: var(--ink-soft);
     background: var(--surface);
     transition: all 0.2s;
+    cursor: pointer;
   }
+  .drop > div { margin-bottom: 4px; }
   .drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
   .drop button {
     display: inline-block;
