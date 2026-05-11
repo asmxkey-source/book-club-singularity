@@ -164,41 +164,6 @@
     color: var(--ink);
   }
 
-  .insight-block {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 16px 18px;
-    margin-bottom: 12px;
-  }
-  .insight-header {
-    display: flex;
-    gap: 12px;
-    align-items: baseline;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-  }
-  .insight-session { font-size: 16px; font-weight: 600; color: var(--accent); }
-  .insight-date { color: var(--ink-soft); font-size: 13px; }
-  .insight-pages { color: var(--ink-soft); font-size: 12px; margin-left: auto; }
-  .insight-members { display: flex; flex-direction: column; gap: 14px; }
-  .insight-member {
-    border-left: 3px solid var(--accent-soft);
-    padding-left: 14px;
-  }
-  .m-name {
-    font-weight: 600;
-    font-size: 13px;
-    color: var(--accent);
-    display: block;
-    margin-bottom: 4px;
-  }
-  .m-content {
-    white-space: pre-wrap;
-    font-size: 14px;
-    line-height: 1.65;
-    color: var(--ink);
-  }
   .empty-section {
     text-align: center;
     padding: 32px 20px;
@@ -353,11 +318,6 @@
   <section id="people">
     <h2>참여자별 페이스</h2>
     <div class="person-grid" id="people-grid"></div>
-  </section>
-
-  <section id="insights-section">
-    <h2>주요 인사이트</h2>
-    <div id="insights-list"></div>
   </section>
 
   <section id="matrix-section">
@@ -583,7 +543,6 @@ function render(completions) {
     `;
   }).join('');
 
-  renderInsights(completions, sched);
   renderLogs(completions);
 
   const headRow = `<tr><th>회차</th>${CONFIG.members.map(n => `<th>${n}</th>`).join('')}</tr>`;
@@ -605,45 +564,8 @@ function renderEmpty() {
   document.getElementById('cards').innerHTML = '<div class="empty" style="grid-column:1/-1">아직 데이터가 없어요. 아래에 카톡 대화 파일을 올려주세요.</div>';
   document.getElementById('people-grid').innerHTML = '';
   document.getElementById('matrix').innerHTML = '';
-  document.getElementById('insights-list').innerHTML = '';
   document.getElementById('log-filters').innerHTML = '';
   document.getElementById('log-list').innerHTML = '';
-}
-
-function renderInsights(completions, sched) {
-  const bySession = {};
-  completions.forEach(c => {
-    if (!bySession[c.session]) bySession[c.session] = {};
-    bySession[c.session][c.name] = c;
-  });
-  const sessionNums = Object.keys(bySession).map(Number).sort((a, b) => b - a);
-  const list = document.getElementById('insights-list');
-  if (sessionNums.length === 0) {
-    list.innerHTML = '<div class="empty-section">아직 작성된 인사이트가 없어요. 멤버들이 미션 인증을 올리면 회차별로 정리됩니다.</div>';
-    return;
-  }
-  list.innerHTML = sessionNums.map(n => {
-    const s = sched[n - 1];
-    const blocks = CONFIG.members.map(name => {
-      const e = bySession[n][name];
-      if (!e) return '';
-      const text = e.content ? escapeHtml(e.content) : '<em style="color:var(--ink-soft)">(느낀점 없음)</em>';
-      return `
-        <div class="insight-member">
-          <span class="m-name">${escapeHtml(name)}</span>
-          <div class="m-content">${text}</div>
-        </div>`;
-    }).filter(Boolean).join('');
-    return `
-      <div class="insight-block">
-        <div class="insight-header">
-          <span class="insight-session">${n}회차</span>
-          <span class="insight-date">${fmtShort(s.date)} (${dayOfWeek(s.date)})</span>
-          <span class="insight-pages">p.${s.startPage}~${s.endPage}</span>
-        </div>
-        <div class="insight-members">${blocks}</div>
-      </div>`;
-  }).join('');
 }
 
 function renderLogs(completions) {
