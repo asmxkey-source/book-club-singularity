@@ -135,6 +135,7 @@
   .cell.late { color: var(--late); background: var(--late-bg); }
   .cell.miss { color: var(--miss); background: var(--miss-bg); }
   .cell.pending { color: var(--pending); background: var(--pending-bg); }
+  .cell.today { color: #1d4ed8; background: #dbeafe; }
   .cell .date { font-weight: 400; opacity: 0.75; margin-left: 4px; font-size: 11px; }
 
   .legend { display: flex; gap: 12px; font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; flex-wrap: wrap; }
@@ -221,8 +222,8 @@
   <section id="matrix-section">
     <h2>회차별 현황</h2>
     <div class="legend">
-      <span class="item"><span class="dot" style="background: var(--ok-bg); border: 1px solid var(--ok);"></span> 정시 완료</span>
-      <span class="item"><span class="dot" style="background: var(--late-bg); border: 1px solid var(--late);"></span> 주말 만회</span>
+      <span class="item"><span class="dot" style="background: var(--ok-bg); border: 1px solid var(--ok);"></span> 완료</span>
+      <span class="item"><span class="dot" style="background: #dbeafe; border: 1px solid #1d4ed8;"></span> 진행중 (오늘)</span>
       <span class="item"><span class="dot" style="background: var(--miss-bg); border: 1px solid var(--miss);"></span> 누락</span>
       <span class="item"><span class="dot" style="background: var(--pending-bg); border: 1px solid var(--pending);"></span> 예정</span>
     </div>
@@ -307,13 +308,10 @@ function getToday() {
 function classify(comp, sched, today) {
   if (!comp) {
     if (today < sched.date) return { kind: 'pending', label: '예정' };
-    return { kind: 'miss', label: '미완료' };
+    if (fmtDate(today) === fmtDate(sched.date)) return { kind: 'today', label: '진행중' };
+    return { kind: 'miss', label: '누락' };
   }
-  const claimed = comp.claimedDate;
-  if (diffDays(claimed, sched.date) <= 0) return { kind: 'ok', label: '✓', date: fmtShort(claimed) };
-  const dow = claimed.getDay();
-  if (dow === 0 || dow === 6) return { kind: 'late', label: '만회', date: fmtShort(claimed) };
-  return { kind: 'late', label: '지각', date: fmtShort(claimed) };
+  return { kind: 'ok', label: '✓', date: fmtShort(comp.claimedDate) };
 }
 
 function render(completions) {
@@ -327,27 +325,34 @@ function render(completions) {
   const totalDone = completions.length;
   const totalExpected = elapsedSessions * CONFIG.members.length;
 
+  const endDate = sched[sched.length-1].date;
+  const daysToEnd = diffDays(endDate, today);
+  let ddayLabel;
+  if (daysToEnd > 0) ddayLabel = `D-${daysToEnd}`;
+  else if (daysToEnd === 0) ddayLabel = 'D-day';
+  else ddayLabel = `종료 +${-daysToEnd}일`;
+
   const todayIdx = sched.findIndex(s => fmtDate(s.date) === fmtDate(today));
-  let todayLabel;
+  let sessionLabel;
   if (todayIdx === -1) {
     const next = sched.find(s => s.date > today);
-    if (next) todayLabel = `다음 회차: ${next.session}회 (${fmtShort(next.date)})`;
-    else if (today > sched[sched.length-1].date) todayLabel = '모임 종료';
-    else todayLabel = '주말';
+    if (next) sessionLabel = `다음 ${next.session}회차 (${fmtShort(next.date)})`;
+    else if (today > sched[sched.length-1].date) sessionLabel = '모임 종료';
+    else sessionLabel = '주말';
   } else {
-    todayLabel = `오늘은 ${sched[todayIdx].session}회차`;
+    sessionLabel = `${sched[todayIdx].session}회차 진행중`;
   }
 
   document.getElementById('cards').innerHTML = `
     <div class="card">
       <div class="label">오늘</div>
       <div class="value">${fmtShort(today)} (${dayOfWeek(today)})</div>
-      <div class="sub">${todayLabel}</div>
+      <div class="sub">${ddayLabel} · ${sessionLabel}</div>
     </div>
     <div class="card">
-      <div class="label">전체 완료율</div>
+      <div class="label">현재까지 완료율</div>
       <div class="value">${totalExpected ? Math.round(totalDone/totalExpected*100) : 0}%</div>
-      <div class="sub">${totalDone} / ${totalExpected}건 (지금까지)</div>
+      <div class="sub">오늘까지 진행분 ${totalDone} / ${totalExpected}건</div>
     </div>
     <div class="card">
       <div class="label">남은 회차</div>
@@ -358,10 +363,6 @@ function render(completions) {
 
   document.getElementById('people-grid').innerHTML = CONFIG.members.map(name => {
     const done = Object.keys(byPerson[name]).length;
-    const onTime = Object.values(byPerson[name]).filter(c => {
-      const s = sched[c.session-1];
-      return s && diffDays(c.claimedDate, s.date) <= 0;
-    }).length;
     const expected = elapsedSessions;
     const behind = Math.max(0, expected - done);
     const pct = expected ? Math.round(done/expected*100) : 0;
@@ -371,7 +372,6 @@ function render(completions) {
         <div class="bar"><div style="width:${Math.min(100,pct)}%"></div></div>
         <div class="stats">
           <span><b>${done}</b>/${expected} 완료</span>
-          <span><b>${onTime}</b> 정시</span>
           <span style="color:${behind>0?'var(--miss)':'var(--ink-soft)'}"><b>${behind}</b> 밀림</span>
         </div>
       </div>
