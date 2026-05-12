@@ -134,17 +134,12 @@
   .log-master > summary::-webkit-details-marker { display: none; }
   .master-icon { color: var(--ink-soft); font-size: 14px; }
   .master-label { font-weight: 600; color: var(--ink); }
-  .master-hint {
-    color: var(--ink-soft);
-    font-size: 12px;
-    margin-left: auto;
-    white-space: nowrap;
-  }
   .master-arrow {
     color: var(--ink-soft);
     font-size: 16px;
     transition: transform 0.25s ease;
     line-height: 1;
+    margin-left: auto;
   }
   .log-master[open] .master-arrow { transform: rotate(180deg); }
   #log-list {
@@ -409,7 +404,6 @@
       <summary>
         <span class="master-icon">▦</span>
         <span class="master-label" id="master-label">펼치기</span>
-        <span class="master-hint">필터 누르면 자동 펼침</span>
         <span class="master-arrow">⌄</span>
       </summary>
       <div id="log-list"></div>
