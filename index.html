@@ -673,7 +673,7 @@ function renderLogs(completions, sched) {
       if (!bySession[c.session]) bySession[c.session] = {};
       bySession[c.session][c.name] = c;
     });
-    const sessionNums = Object.keys(bySession).map(Number).sort((a, b) => b - a);
+    const sessionNums = Object.keys(bySession).map(Number).sort((a, b) => a - b);
     const sessionCount = sessionNums.length;
     totalEl.innerHTML = `전체 <b>${sessionCount}</b>편`;
     masterEl.open = false;
@@ -699,7 +699,7 @@ function renderLogs(completions, sched) {
           </div>`;
       }).filter(Boolean).join('');
       return `
-        <details class="session-block"${idx === 0 ? ' open' : ''}>
+        <details class="session-block"${idx === sessionNums.length - 1 ? ' open' : ''}>
           <summary>
             <span class="session-num">${n}회차</span>
             <span class="session-date">${fmtShort(s.date)}(${dayOfWeek(s.date)})</span>
@@ -721,6 +721,8 @@ function renderLogs(completions, sched) {
         if (show) visible++;
       });
       block.style.display = visible > 0 ? '' : 'none';
+      const countEl = block.querySelector('.session-count');
+      if (countEl) countEl.style.display = (f === 'all') ? '' : 'none';
     });
   }
 
