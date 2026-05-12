@@ -107,6 +107,52 @@
   .progress-ring .ring-bg { stroke: var(--accent-soft); }
   .progress-ring .ring-fg { stroke: var(--accent); transition: stroke-dasharray 0.6s ease; }
 
+  .log-total {
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .log-total b { color: var(--ink); font-weight: 600; font-size: 14px; }
+
+  .log-master {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .log-master > summary {
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    list-style: none;
+    font-size: 14px;
+    user-select: none;
+  }
+  .log-master > summary::-webkit-details-marker { display: none; }
+  .master-icon { color: var(--ink-soft); font-size: 14px; }
+  .master-label { font-weight: 600; color: var(--ink); }
+  .master-hint {
+    color: var(--ink-soft);
+    font-size: 12px;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .master-arrow {
+    color: var(--ink-soft);
+    font-size: 16px;
+    transition: transform 0.25s ease;
+    line-height: 1;
+  }
+  .log-master[open] .master-arrow { transform: rotate(180deg); }
+  #log-list {
+    padding: 4px 16px 16px;
+    border-top: 1px solid var(--line);
+  }
+  #log-list .session-block:last-child { margin-bottom: 0; }
+
   .log-filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .log-filter {
     background: var(--surface);
@@ -356,9 +402,18 @@
   </section>
 
   <section id="logs-section">
-    <h2>독서 로그</h2>
+    <h2 id="logs-title">독서 로그</h2>
+    <div class="log-total" id="log-total"></div>
     <div class="log-filters" id="log-filters"></div>
-    <div id="log-list"></div>
+    <details class="log-master" id="log-master">
+      <summary>
+        <span class="master-icon">▦</span>
+        <span class="master-label" id="master-label">펼치기</span>
+        <span class="master-hint">필터 누르면 자동 펼침</span>
+        <span class="master-arrow">⌄</span>
+      </summary>
+      <div id="log-list"></div>
+    </details>
   </section>
 
   <section id="upload-section" style="display:none">
@@ -596,11 +651,17 @@ function renderEmpty() {
   document.getElementById('matrix').innerHTML = '';
   document.getElementById('log-filters').innerHTML = '';
   document.getElementById('log-list').innerHTML = '';
+  document.getElementById('log-total').innerHTML = '';
+  document.getElementById('log-master').style.display = 'none';
 }
 
 function renderLogs(completions, sched) {
   const filters = document.getElementById('log-filters');
   const list = document.getElementById('log-list');
+  const totalEl = document.getElementById('log-total');
+  const masterEl = document.getElementById('log-master');
+  const masterLabel = document.getElementById('master-label');
+
   filters.innerHTML = `
     <button class="log-filter active" data-name="all">전체</button>
     ${CONFIG.members.map(n => `<button class="log-filter" data-name="${escapeHtml(n)}">${escapeHtml(n)}</button>`).join('')}
@@ -608,14 +669,25 @@ function renderLogs(completions, sched) {
   list.dataset.filter = 'all';
 
   if (completions.length === 0) {
+    totalEl.innerHTML = '전체 <b>0</b>편';
+    masterEl.style.display = 'none';
     list.innerHTML = '<div class="empty-section">아직 작성된 로그가 없어요.</div>';
   } else {
+    masterEl.style.display = '';
     const bySession = {};
     completions.forEach(c => {
       if (!bySession[c.session]) bySession[c.session] = {};
       bySession[c.session][c.name] = c;
     });
     const sessionNums = Object.keys(bySession).map(Number).sort((a, b) => b - a);
+    const sessionCount = sessionNums.length;
+    totalEl.innerHTML = `전체 <b>${sessionCount}</b>편`;
+    masterEl.open = false;
+    const updateMasterLabel = () => {
+      masterLabel.textContent = `전체 ${sessionCount}편 ${masterEl.open ? '접기' : '펼치기'}`;
+    };
+    updateMasterLabel();
+    masterEl.ontoggle = updateMasterLabel;
 
     list.innerHTML = sessionNums.map((n, idx) => {
       const s = sched[n - 1];
@@ -664,6 +736,7 @@ function renderLogs(completions, sched) {
       btn.classList.add('active');
       list.dataset.filter = btn.dataset.name;
       applyFilter();
+      masterEl.open = true;
     });
   });
 }
