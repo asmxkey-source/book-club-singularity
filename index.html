@@ -126,14 +126,14 @@
   }
   .log-filter:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
 
-  .log-entry {
+  .session-block {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 8px;
     margin-bottom: 8px;
     overflow: hidden;
   }
-  .log-entry summary {
+  .session-block summary {
     padding: 12px 16px;
     cursor: pointer;
     display: flex;
@@ -142,25 +142,49 @@
     font-size: 13px;
     list-style: none;
   }
-  .log-entry summary::-webkit-details-marker { display: none; }
-  .log-entry summary::before {
+  .session-block summary::-webkit-details-marker { display: none; }
+  .session-block summary::before {
     content: '▸';
     color: var(--ink-soft);
     transition: transform 0.2s;
     display: inline-block;
     font-size: 11px;
   }
-  .log-entry[open] summary::before { transform: rotate(90deg); }
-  .log-session { font-weight: 600; color: var(--accent); min-width: 46px; }
-  .log-date { color: var(--ink-soft); min-width: 44px; }
-  .log-name { font-weight: 600; min-width: 36px; }
-  .log-preview { color: var(--ink-soft); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  .log-content {
-    padding: 12px 16px 16px;
+  .session-block[open] summary::before { transform: rotate(90deg); }
+  .session-num { font-weight: 600; color: var(--accent); min-width: 46px; }
+  .session-date { color: var(--ink-soft); min-width: 84px; }
+  .session-pages { color: var(--ink-soft); font-size: 12px; flex: 1; min-width: 0; }
+  .session-count { color: var(--ink-soft); font-size: 12px; white-space: nowrap; }
+
+  .session-body {
+    padding: 4px 16px 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .member-content {
+    border-left: 3px solid var(--accent-soft);
+    padding: 8px 0 8px 14px;
+  }
+  .member-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .member-date {
+    color: var(--ink-soft);
+    font-weight: 400;
+    font-size: 12px;
+  }
+  .member-text {
     white-space: pre-wrap;
     font-size: 14px;
     line-height: 1.65;
-    border-top: 1px solid var(--line);
     color: var(--ink);
   }
 
@@ -543,7 +567,7 @@ function render(completions) {
     `;
   }).join('');
 
-  renderLogs(completions);
+  renderLogs(completions, sched);
 
   const headRow = `<tr><th>회차</th>${CONFIG.members.map(n => `<th>${n}</th>`).join('')}</tr>`;
   const bodyRows = sched.map(s => {
@@ -568,41 +592,72 @@ function renderEmpty() {
   document.getElementById('log-list').innerHTML = '';
 }
 
-function renderLogs(completions) {
+function renderLogs(completions, sched) {
   const filters = document.getElementById('log-filters');
   const list = document.getElementById('log-list');
   filters.innerHTML = `
     <button class="log-filter active" data-name="all">전체</button>
     ${CONFIG.members.map(n => `<button class="log-filter" data-name="${escapeHtml(n)}">${escapeHtml(n)}</button>`).join('')}
   `;
+  list.dataset.filter = 'all';
+
   if (completions.length === 0) {
     list.innerHTML = '<div class="empty-section">아직 작성된 로그가 없어요.</div>';
   } else {
-    const sorted = [...completions].sort((a, b) => b.session - a.session);
-    list.innerHTML = sorted.map(c => {
-      const previewSrc = c.content ? c.content.replace(/\s+/g, ' ').trim() : '(느낀점 없음)';
-      const preview = previewSrc.length > 80 ? previewSrc.slice(0, 80) + '…' : previewSrc;
-      const fullContent = c.content ? escapeHtml(c.content) : '<em style="color:var(--ink-soft)">(느낀점 없음)</em>';
+    const bySession = {};
+    completions.forEach(c => {
+      if (!bySession[c.session]) bySession[c.session] = {};
+      bySession[c.session][c.name] = c;
+    });
+    const sessionNums = Object.keys(bySession).map(Number).sort((a, b) => b - a);
+
+    list.innerHTML = sessionNums.map((n, idx) => {
+      const s = sched[n - 1];
+      const entries = bySession[n];
+      const doneCount = Object.keys(entries).length;
+      const total = CONFIG.members.length;
+      const memberBlocks = CONFIG.members.map(name => {
+        const e = entries[name];
+        if (!e) return '';
+        const text = e.content ? escapeHtml(e.content) : '<em style="color:var(--ink-soft)">(느낀점 없음)</em>';
+        return `
+          <div class="member-content" data-name="${escapeHtml(name)}">
+            <div class="member-name">${escapeHtml(name)}<span class="member-date">${fmtShort(e.claimedDate)}</span></div>
+            <div class="member-text">${text}</div>
+          </div>`;
+      }).filter(Boolean).join('');
       return `
-        <details class="log-entry" data-name="${escapeHtml(c.name)}">
+        <details class="session-block"${idx === 0 ? ' open' : ''}>
           <summary>
-            <span class="log-session">${c.session}회차</span>
-            <span class="log-date">${fmtShort(c.claimedDate)}</span>
-            <span class="log-name">${escapeHtml(c.name)}</span>
-            <span class="log-preview">${escapeHtml(preview)}</span>
+            <span class="session-num">${n}회차</span>
+            <span class="session-date">${fmtShort(s.date)}(${dayOfWeek(s.date)})</span>
+            <span class="session-pages">p.${s.startPage}~${s.endPage}</span>
+            <span class="session-count">${doneCount}/${total} 완료</span>
           </summary>
-          <div class="log-content">${fullContent}</div>
+          <div class="session-body">${memberBlocks}</div>
         </details>`;
     }).join('');
   }
+
+  function applyFilter() {
+    const f = list.dataset.filter || 'all';
+    list.querySelectorAll('.session-block').forEach(block => {
+      let visible = 0;
+      block.querySelectorAll('.member-content').forEach(mc => {
+        const show = (f === 'all' || mc.dataset.name === f);
+        mc.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      block.style.display = visible > 0 ? '' : 'none';
+    });
+  }
+
   filters.querySelectorAll('.log-filter').forEach(btn => {
     btn.addEventListener('click', () => {
       filters.querySelectorAll('.log-filter').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const f = btn.dataset.name;
-      list.querySelectorAll('.log-entry').forEach(entry => {
-        entry.style.display = (f === 'all' || entry.dataset.name === f) ? '' : 'none';
-      });
+      list.dataset.filter = btn.dataset.name;
+      applyFilter();
     });
   });
 }
