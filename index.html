@@ -778,12 +778,13 @@ document.getElementById('m-range').textContent = `p.${CONFIG.startPage} ~ p.${CO
 document.getElementById('m-schedule').textContent = `${CONFIG.totalSessions}회차 · 월~금 ${CONFIG.pagesPerSession}쪽/일`;
 document.getElementById('m-period').textContent = `${CONFIG.startDate} → ${fmtDate(headerSched[headerSched.length-1].date)}`;
 
-document.getElementById('upload-section').style.display = 'block';
-
 fetch('chat.txt?_=' + Date.now())
   .then(r => r.ok ? r.text() : Promise.reject())
   .then(text => loadText(text, 'chat.txt (자동 로드)'))
-  .catch(() => renderEmpty());
+  .catch(() => {
+    document.getElementById('upload-section').style.display = 'block';
+    renderEmpty();
+  });
 </script>
 </body>
 </html>
