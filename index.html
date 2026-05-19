@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>특이점이 온다 — 독서 모임 대시보드</title>
+<title>독서 모임 대시보드</title>
 <style>
   :root {
     --bg: #faf7f2;
@@ -366,9 +366,9 @@
 <body>
 <div class="wrap">
   <header class="hero">
-    <h1>특이점이 온다 · 독서 모임</h1>
+    <h1 id="m-title">독서 모임</h1>
     <div class="meta">
-      <span>레이 커즈와일</span>
+      <span id="m-author"></span>
       <span id="m-range">p.11 ~ p.686 (총 676쪽)</span>
       <span id="m-schedule">23회차 · 월~금 30쪽/일</span>
       <span id="m-period">2026-05-11 → 2026-06-10</span>
@@ -424,6 +424,10 @@
 
 <script>
 const CONFIG = {
+  book: {
+    title: '특이점이 온다',
+    author: '레이 커즈와일',
+  },
   members: ['규리', '진영', '유리'],
   startDate: '2026-05-11',
   totalSessions: 24,
@@ -773,6 +777,10 @@ dropEl.addEventListener('drop', e => {
   r.onload = () => loadText(r.result, `로컬 파일: ${f.name}`);
   r.readAsText(f, 'UTF-8');
 });
+
+document.title = `${CONFIG.book.title} — 독서 모임 대시보드`;
+document.getElementById('m-title').textContent = `${CONFIG.book.title} · 독서 모임`;
+document.getElementById('m-author').textContent = CONFIG.book.author;
 
 const headerSched = generateSchedule();
 const totalPages = CONFIG.endPage - CONFIG.startPage + 1;
